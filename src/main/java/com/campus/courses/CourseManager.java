@@ -1,94 +1,106 @@
 package com.campus.courses;
 
-import com.campus.users.Student;
-import com.campus.users.Lecturer;
 import com.campus.utils.*;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 /**
  * Manager class for handling all course operations
- * Demonstrates composition and service layer pattern
  */
 public class CourseManager implements Manageable<Course> {
     private static final Logger logger = Logger.getInstance();
     private final Scanner scanner = new Scanner(System.in);
-    
+
     private Map<String, Course> courses;
-    private Map<String, Subject> subjects;
-    private CourseFactory courseFactory;
     private NotificationService notificationService;
-    private TimetableGenerator timetableGenerator;
-    
+    private int courseCounter;
+
     public CourseManager() {
         this.courses = new HashMap<>();
-        this.subjects = new HashMap<>();
-        this.courseFactory = new CourseFactory();
         this.notificationService = NotificationService.getInstance();
-        this.timetableGenerator = new TimetableGenerator();
-        initializeSampleCourses();
+        this.courseCounter = 1;
+        initializeSampleData();
         logger.log("CourseManager initialized");
     }
-    
-    private void initializeSampleCourses() {
+
+    private void initializeSampleData() {
         // Create sample courses
-        Course cs101 = courseFactory.createCourse(CourseType.REGULAR, "CS101", 
-                "Introduction to Programming", "CS-101", "Computer Science", 3);
-        courses.put(cs101.getCourseId(), cs101);
-        
-        Course cs201 = courseFactory.createCourse(CourseType.LAB, "CS201", 
-                "Data Structures Lab", "CS-201L", "Computer Science", 2);
-        courses.put(cs201.getCourseId(), cs201);
-        
-        Course math101 = courseFactory.createCourse(CourseType.REGULAR, "MATH101", 
-                "Calculus I", "MATH-101", "Mathematics", 4);
-        courses.put(math101.getCourseId(), math101);
-        
-        // Create sample subjects
-        Subject programming = new Subject("SUB001", "Programming Fundamentals", "PROG-101", 3);
-        subjects.put(programming.getSubjectId(), programming);
-        cs101.addSubject(programming);
-        
-        logger.log("Sample courses initialized");
+        Course course1 = new Course("CS101", "Introduction to Computer Science", "Basic programming concepts");
+        course1.setCredits(3);
+        course1.setDepartment("Computer Science");
+        course1.setInstructor("Dr. Smith");
+        course1.setMaxStudents(30);
+        course1.setStatus(CourseStatus.ACTIVE);
+        courses.put("CS101", course1);
+
+        Course course2 = new Course("MATH201", "Calculus II", "Advanced calculus concepts");
+        course2.setCredits(4);
+        course2.setDepartment("Mathematics");
+        course2.setInstructor("Prof. Johnson");
+        course2.setMaxStudents(25);
+        course2.setStatus(CourseStatus.ACTIVE);
+        courses.put("MATH201", course2);
+
+        Course course3 = new Course("ENG101", "English Composition", "Writing and communication skills");
+        course3.setCredits(3);
+        course3.setDepartment("English");
+        course3.setInstructor("Dr. Williams");
+        course3.setMaxStudents(20);
+        course3.setStatus(CourseStatus.ACTIVE);
+        courses.put("ENG101", course3);
+
+        Course course4 = new Course("PHYS101", "General Physics", "Introduction to physics principles");
+        course4.setCredits(4);
+        course4.setDepartment("Physics");
+        course4.setInstructor("Prof. Brown");
+        course4.setMaxStudents(35);
+        course4.setStatus(CourseStatus.ACTIVE);
+        courses.put("PHYS101", course4);
+
+        Course course5 = new Course("BUS201", "Business Management", "Fundamentals of business management");
+        course5.setCredits(3);
+        course5.setDepartment("Business");
+        course5.setInstructor("Dr. Davis");
+        course5.setMaxStudents(40);
+        course5.setStatus(CourseStatus.ACTIVE);
+        courses.put("BUS201", course5);
+
+        logger.log("Sample course data initialized");
     }
-    
+
     public void displayMenu() {
         while (true) {
             System.out.println("\n=== COURSE MANAGEMENT MENU ===");
-            System.out.println("1. Create Course");
+            System.out.println("1. Add New Course");
             System.out.println("2. View All Courses");
-            System.out.println("3. Search Course");
+            System.out.println("3. Search Courses");
             System.out.println("4. Update Course");
             System.out.println("5. Delete Course");
-            System.out.println("6. Enroll Student in Course");
-            System.out.println("7. Remove Student from Course");
-            System.out.println("8. Assign Lecturer to Course");
-            System.out.println("9. Manage Subjects");
-            System.out.println("10. Generate Timetable");
-            System.out.println("11. Course Reports");
+            System.out.println("6. Course Enrollment");
+            System.out.println("7. Course Reports");
+            System.out.println("8. Course Statistics");
             System.out.println("0. Back to Main Menu");
             System.out.print("Enter your choice: ");
-            
+
             int choice = getChoice();
-            
+
             switch (choice) {
-                case 1: createCourseInteractive(); break;
+                case 1: addNewCourseInteractive(); break;
                 case 2: viewAllCourses(); break;
-                case 3: searchCourseInteractive(); break;
+                case 3: searchCoursesMenu(); break;
                 case 4: updateCourseInteractive(); break;
                 case 5: deleteCourseInteractive(); break;
-                case 6: enrollStudentInteractive(); break;
-                case 7: removeStudentInteractive(); break;
-                case 8: assignLecturerInteractive(); break;
-                case 9: manageSubjects(); break;
-                case 10: generateTimetableInteractive(); break;
-                case 11: generateCourseReports(); break;
+                case 6: courseEnrollmentMenu(); break;
+                case 7: courseReportsMenu(); break;
+                case 8: displayCourseStatistics(); break;
                 case 0: return;
                 default: System.out.println("Invalid choice. Please try again.");
             }
         }
     }
-    
+
     private int getChoice() {
         try {
             return Integer.parseInt(scanner.nextLine());
@@ -96,165 +108,276 @@ public class CourseManager implements Manageable<Course> {
             return -1;
         }
     }
-    
+
     @Override
     public void create(Course course) {
-        if (courses.containsKey(course.getCourseId())) {
-            throw new IllegalArgumentException("Course with ID " + course.getCourseId() + " already exists");
-        }
         courses.put(course.getCourseId(), course);
-        notificationService.notifyObservers("Course created: " + course.getCourseName());
+        notificationService.notifyObservers("New course created: " + course.getCourseName());
         logger.log("Course created: " + course.getCourseId());
     }
-    
+
     @Override
     public Course read(String courseId) {
         return courses.get(courseId);
     }
-    
+
     @Override
     public void update(Course course) {
-        if (!courses.containsKey(course.getCourseId())) {
-            throw new IllegalArgumentException("Course with ID " + course.getCourseId() + " does not exist");
-        }
         courses.put(course.getCourseId(), course);
         notificationService.notifyObservers("Course updated: " + course.getCourseName());
         logger.log("Course updated: " + course.getCourseId());
     }
-    
+
     @Override
     public void delete(String courseId) {
-        Course removedCourse = courses.remove(courseId);
-        if (removedCourse != null) {
-            notificationService.notifyObservers("Course deleted: " + removedCourse.getCourseName());
+        Course course = courses.remove(courseId);
+        if (course != null) {
+            notificationService.notifyObservers("Course deleted: " + course.getCourseName());
             logger.log("Course deleted: " + courseId);
-        } else {
-            throw new IllegalArgumentException("Course with ID " + courseId + " does not exist");
         }
     }
-    
+
     @Override
     public List<Course> getAll() {
         return new ArrayList<>(courses.values());
     }
-    
-    public void createCourseInteractive() {
-        System.out.println("\n=== CREATE NEW COURSE ===");
-        
+
+    // Utility methods for external access
+    public int getTotalCourses() {
+        return courses.size();
+    }
+
+    public int getActiveCourses() {
+        return (int) courses.values().stream()
+                .filter(course -> course.getStatus() == CourseStatus.ACTIVE)
+                .count();
+    }
+
+    public int getInactiveCourses() {
+        return (int) courses.values().stream()
+                .filter(course -> course.getStatus() == CourseStatus.INACTIVE)
+                .count();
+    }
+
+    public List<Course> getCoursesByDepartment(String department) {
+        return courses.values().stream()
+                .filter(course -> department.equals(course.getDepartment()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Course> getCoursesByInstructor(String instructor) {
+        return courses.values().stream()
+                .filter(course -> instructor.equals(course.getInstructor()))
+                .collect(Collectors.toList());
+    }
+
+    private void addNewCourseInteractive() {
+        System.out.println("\n=== ADD NEW COURSE ===");
+
         System.out.print("Enter Course ID: ");
         String courseId = scanner.nextLine();
-        
+
+        if (courses.containsKey(courseId)) {
+            System.out.println("Course ID already exists.");
+            return;
+        }
+
         System.out.print("Enter Course Name: ");
         String courseName = scanner.nextLine();
-        
-        System.out.print("Enter Course Code: ");
-        String courseCode = scanner.nextLine();
-        
+
+        System.out.print("Enter Course Description: ");
+        String description = scanner.nextLine();
+
+        Course newCourse = new Course(courseId, courseName, description);
+
+        System.out.print("Enter Credits: ");
+        try {
+            int credits = Integer.parseInt(scanner.nextLine());
+            newCourse.setCredits(credits);
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid credits, using default (3)");
+            newCourse.setCredits(3);
+        }
+
         System.out.print("Enter Department: ");
         String department = scanner.nextLine();
-        
-        System.out.print("Enter Credits: ");
-        int credits = Integer.parseInt(scanner.nextLine());
-        
-        System.out.println("Select Course Type:");
-        CourseType[] types = CourseType.values();
-        for (int i = 0; i < types.length; i++) {
-            System.out.println((i + 1) + ". " + types[i].getDisplayName());
+        if (!department.trim().isEmpty()) {
+            newCourse.setDepartment(department);
         }
-        System.out.print("Enter choice: ");
-        int typeChoice = Integer.parseInt(scanner.nextLine()) - 1;
-        
-        if (typeChoice >= 0 && typeChoice < types.length) {
-            try {
-                Course newCourse = courseFactory.createCourse(types[typeChoice], courseId, 
-                                                            courseName, courseCode, department, credits);
-                create(newCourse);
-                System.out.println("Course created successfully!");
-                newCourse.displayCourseInfo();
-            } catch (Exception e) {
-                System.out.println("Error creating course: " + e.getMessage());
-            }
-        } else {
-            System.out.println("Invalid course type selection.");
+
+        System.out.print("Enter Instructor: ");
+        String instructor = scanner.nextLine();
+        if (!instructor.trim().isEmpty()) {
+            newCourse.setInstructor(instructor);
         }
+
+        System.out.print("Enter Maximum Students: ");
+        try {
+            int maxStudents = Integer.parseInt(scanner.nextLine());
+            newCourse.setMaxStudents(maxStudents);
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid max students, using default (30)");
+            newCourse.setMaxStudents(30);
+        }
+
+        create(newCourse);
+        System.out.println("Course added successfully!");
+        newCourse.displayCourseInfo();
     }
-    
-    public void viewAllCourses() {
+
+    private void viewAllCourses() {
         System.out.println("\n=== ALL COURSES ===");
         if (courses.isEmpty()) {
             System.out.println("No courses found.");
             return;
         }
-        
-        System.out.printf("%-10s %-30s %-15s %-20s %-8s %-15s %-10s%n", 
-                         "Course ID", "Course Name", "Course Code", "Department", "Credits", "Type", "Students");
-        System.out.println("-".repeat(110));
-        
-        for (Course course : courses.values()) {
-            System.out.printf("%-10s %-30s %-15s %-20s %-8d %-15s %-10d%n",
-                             course.getCourseId(),
-                             course.getCourseName(),
-                             course.getCourseCode(),
-                             course.getDepartment(),
-                             course.getCredits(),
-                             course.getCourseType(),
-                             course.getEnrolledStudents().size());
+
+        System.out.printf("%-8s %-25s %-15s %-15s %-8s %-8s %-12s%n",
+                "ID", "Course Name", "Department", "Instructor", "Credits", "Max", "Status");
+        System.out.println("-".repeat(95));
+
+        courses.values().stream()
+                .sorted((c1, c2) -> c1.getCourseId().compareTo(c2.getCourseId()))
+                .forEach(course -> {
+                    System.out.printf("%-8s %-25s %-15s %-15s %-8d %-8d %-12s%n",
+                            course.getCourseId(),
+                            course.getCourseName().length() > 23 ? course.getCourseName().substring(0, 23) + ".." : course.getCourseName(),
+                            course.getDepartment() != null ?
+                                    (course.getDepartment().length() > 13 ? course.getDepartment().substring(0, 13) + ".." : course.getDepartment()) : "N/A",
+                            course.getInstructor() != null ?
+                                    (course.getInstructor().length() > 13 ? course.getInstructor().substring(0, 13) + ".." : course.getInstructor()) : "N/A",
+                            course.getCredits(),
+                            course.getMaxStudents(),
+                            course.getStatus());
+                });
+
+        System.out.println("-".repeat(95));
+        System.out.println("Total Courses: " + courses.size());
+        System.out.println("Active Courses: " + getActiveCourses());
+    }
+
+    private void searchCoursesMenu() {
+        System.out.println("\n=== SEARCH COURSES ===");
+        System.out.println("1. Search by Name");
+        System.out.println("2. Search by Department");
+        System.out.println("3. Search by Instructor");
+        System.out.println("4. Search by Credits");
+        System.out.print("Enter choice: ");
+
+        int choice = getChoice();
+
+        switch (choice) {
+            case 1: searchByName(); break;
+            case 2: searchByDepartment(); break;
+            case 3: searchByInstructor(); break;
+            case 4: searchByCredits(); break;
+            default: System.out.println("Invalid choice.");
         }
     }
-    
-    public void searchCourseInteractive() {
-        System.out.println("\n=== SEARCH COURSE ===");
-        System.out.print("Enter search term (ID, name, code, or department): ");
+
+    private void searchByName() {
+        System.out.print("Enter course name to search: ");
         String searchTerm = scanner.nextLine().toLowerCase();
-        
-        List<Course> results = searchCourses(searchTerm);
-        
-        if (results.isEmpty()) {
-            System.out.println("No courses found matching: " + searchTerm);
-        } else {
-            System.out.println("Found " + results.size() + " course(s):");
-            for (Course course : results) {
-                System.out.println("- " + course.getCourseId() + ": " + course.getCourseName() + 
-                                 " (" + course.getCourseCode() + ")");
-            }
+
+        List<Course> results = courses.values().stream()
+                .filter(course -> course.getCourseName().toLowerCase().contains(searchTerm))
+                .collect(Collectors.toList());
+
+        displaySearchResults(results, "name containing '" + searchTerm + "'");
+    }
+
+    private void searchByDepartment() {
+        System.out.print("Enter department to search: ");
+        String department = scanner.nextLine().toLowerCase();
+
+        List<Course> results = courses.values().stream()
+                .filter(course -> course.getDepartment() != null &&
+                        course.getDepartment().toLowerCase().contains(department))
+                .collect(Collectors.toList());
+
+        displaySearchResults(results, "department containing '" + department + "'");
+    }
+
+    private void searchByInstructor() {
+        System.out.print("Enter instructor to search: ");
+        String instructor = scanner.nextLine().toLowerCase();
+
+        List<Course> results = courses.values().stream()
+                .filter(course -> course.getInstructor() != null &&
+                        course.getInstructor().toLowerCase().contains(instructor))
+                .collect(Collectors.toList());
+
+        displaySearchResults(results, "instructor containing '" + instructor + "'");
+    }
+
+    private void searchByCredits() {
+        System.out.print("Enter credits: ");
+        try {
+            int credits = Integer.parseInt(scanner.nextLine());
+
+            List<Course> results = courses.values().stream()
+                    .filter(course -> course.getCredits() == credits)
+                    .collect(Collectors.toList());
+
+            displaySearchResults(results, credits + " credits");
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid credits format.");
         }
     }
-    
-    public List<Course> searchCourses(String searchTerm) {
-        return courses.values().stream()
-                .filter(course -> 
-                    course.getCourseId().toLowerCase().contains(searchTerm) ||
-                    course.getCourseName().toLowerCase().contains(searchTerm) ||
-                    course.getCourseCode().toLowerCase().contains(searchTerm) ||
-                    course.getDepartment().toLowerCase().contains(searchTerm))
-                .collect(Collectors.toList());
+
+    private void displaySearchResults(List<Course> results, String criteria) {
+        System.out.println("\n=== SEARCH RESULTS ===");
+        System.out.println("Search criteria: " + criteria);
+        System.out.println("Results found: " + results.size());
+
+        if (results.isEmpty()) {
+            System.out.println("No courses found matching the criteria.");
+            return;
+        }
+
+        System.out.printf("%-8s %-25s %-15s %-15s %-8s %-12s%n",
+                "ID", "Course Name", "Department", "Instructor", "Credits", "Status");
+        System.out.println("-".repeat(85));
+
+        results.forEach(course -> {
+            System.out.printf("%-8s %-25s %-15s %-15s %-8d %-12s%n",
+                    course.getCourseId(),
+                    course.getCourseName().length() > 23 ? course.getCourseName().substring(0, 23) + ".." : course.getCourseName(),
+                    course.getDepartment() != null ?
+                            (course.getDepartment().length() > 13 ? course.getDepartment().substring(0, 13) + ".." : course.getDepartment()) : "N/A",
+                    course.getInstructor() != null ?
+                            (course.getInstructor().length() > 13 ? course.getInstructor().substring(0, 13) + ".." : course.getInstructor()) : "N/A",
+                    course.getCredits(),
+                    course.getStatus());
+        });
     }
-    
-    public void updateCourseInteractive() {
+
+    private void updateCourseInteractive() {
         System.out.println("\n=== UPDATE COURSE ===");
-        System.out.print("Enter Course ID to update: ");
+        System.out.print("Enter Course ID: ");
         String courseId = scanner.nextLine();
-        
+
         Course course = read(courseId);
         if (course == null) {
             System.out.println("Course not found.");
             return;
         }
-        
-        System.out.println("Current course details:");
+
+        System.out.println("Current course information:");
         course.displayCourseInfo();
-        
+
         System.out.println("\nWhat would you like to update?");
         System.out.println("1. Course Name");
         System.out.println("2. Description");
         System.out.println("3. Credits");
-        System.out.println("4. Max Capacity");
-        System.out.println("5. Course Fee");
-        System.out.println("6. Status");
+        System.out.println("4. Department");
+        System.out.println("5. Instructor");
+        System.out.println("6. Maximum Students");
+        System.out.println("7. Status");
         System.out.print("Enter choice: ");
-        
+
         int choice = getChoice();
-        
+
         switch (choice) {
             case 1:
                 System.out.print("Enter new course name: ");
@@ -266,58 +389,71 @@ public class CourseManager implements Manageable<Course> {
                 break;
             case 3:
                 System.out.print("Enter new credits: ");
-                course.setCredits(Integer.parseInt(scanner.nextLine()));
+                try {
+                    course.setCredits(Integer.parseInt(scanner.nextLine()));
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid credits format.");
+                    return;
+                }
                 break;
             case 4:
-                System.out.print("Enter new max capacity: ");
-                course.setMaxCapacity(Integer.parseInt(scanner.nextLine()));
+                System.out.print("Enter new department: ");
+                course.setDepartment(scanner.nextLine());
                 break;
             case 5:
-                System.out.print("Enter new course fee: ");
-                course.setCourseFee(Double.parseDouble(scanner.nextLine()));
+                System.out.print("Enter new instructor: ");
+                course.setInstructor(scanner.nextLine());
                 break;
             case 6:
+                System.out.print("Enter new maximum students: ");
+                try {
+                    course.setMaxStudents(Integer.parseInt(scanner.nextLine()));
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid number format.");
+                    return;
+                }
+                break;
+            case 7:
                 System.out.println("Select new status:");
                 CourseStatus[] statuses = CourseStatus.values();
                 for (int i = 0; i < statuses.length; i++) {
-                    System.out.println((i + 1) + ". " + statuses[i].getDisplayName());
+                    System.out.println((i + 1) + ". " + statuses[i]);
                 }
                 System.out.print("Enter choice: ");
-                int statusChoice = Integer.parseInt(scanner.nextLine()) - 1;
-                if (statusChoice >= 0 && statusChoice < statuses.length) {
-                    course.setStatus(statuses[statusChoice]);
+                int statusChoice = getChoice();
+                if (statusChoice >= 1 && statusChoice <= statuses.length) {
+                    course.setStatus(statuses[statusChoice - 1]);
+                } else {
+                    System.out.println("Invalid choice.");
+                    return;
                 }
                 break;
             default:
                 System.out.println("Invalid choice.");
                 return;
         }
-        
+
         update(course);
         System.out.println("Course updated successfully!");
     }
-    
-    public void deleteCourseInteractive() {
+
+    private void deleteCourseInteractive() {
         System.out.println("\n=== DELETE COURSE ===");
-        System.out.print("Enter Course ID to delete: ");
+        System.out.print("Enter Course ID: ");
         String courseId = scanner.nextLine();
-        
+
         Course course = read(courseId);
         if (course == null) {
             System.out.println("Course not found.");
             return;
         }
-        
+
         System.out.println("Course to be deleted:");
         course.displayCourseInfo();
-        
-        if (!course.getEnrolledStudents().isEmpty()) {
-            System.out.println("Warning: This course has " + course.getEnrolledStudents().size() + " enrolled students.");
-        }
-        
+
         System.out.print("Are you sure you want to delete this course? (yes/no): ");
         String confirmation = scanner.nextLine();
-        
+
         if ("yes".equalsIgnoreCase(confirmation)) {
             delete(courseId);
             System.out.println("Course deleted successfully!");
@@ -325,261 +461,296 @@ public class CourseManager implements Manageable<Course> {
             System.out.println("Deletion cancelled.");
         }
     }
-    
-    public void enrollStudentInteractive() {
-        System.out.println("\n=== ENROLL STUDENT IN COURSE ===");
-        System.out.print("Enter Course ID: ");
-        String courseId = scanner.nextLine();
-        
-        Course course = read(courseId);
-        if (course == null) {
-            System.out.println("Course not found.");
-            return;
-        }
-        
-        System.out.print("Enter Student ID: ");
-        String studentId = scanner.nextLine();
-        
-        // In a real implementation, you would get the student from UserManager
-        System.out.println("Student enrollment functionality would be implemented here.");
-        System.out.println("Course: " + course.getCourseName());
-        System.out.println("Available slots: " + course.getAvailableSlots());
-        
-        logger.log("Student enrollment attempted for course: " + courseId);
-    }
-    
-    public void removeStudentInteractive() {
-        System.out.println("\n=== REMOVE STUDENT FROM COURSE ===");
-        System.out.print("Enter Course ID: ");
-        String courseId = scanner.nextLine();
-        
-        Course course = read(courseId);
-        if (course == null) {
-            System.out.println("Course not found.");
-            return;
-        }
-        
-        System.out.print("Enter Student ID: ");
-        String studentId = scanner.nextLine();
-        
-        System.out.println("Student removal functionality would be implemented here.");
-        System.out.println("Course: " + course.getCourseName());
-        System.out.println("Current enrolled students: " + course.getEnrolledStudents().size());
-        
-        logger.log("Student removal attempted for course: " + courseId);
-    }
-    
-    public void assignLecturerInteractive() {
-        System.out.println("\n=== ASSIGN LECTURER TO COURSE ===");
-        System.out.print("Enter Course ID: ");
-        String courseId = scanner.nextLine();
-        
-        Course course = read(courseId);
-        if (course == null) {
-            System.out.println("Course not found.");
-            return;
-        }
-        
-        System.out.print("Enter Lecturer ID: ");
-        String lecturerId = scanner.nextLine();
-        
-        System.out.println("Lecturer assignment functionality would be implemented here.");
-        System.out.println("Course: " + course.getCourseName());
-        System.out.println("Current instructor: " + 
-                          (course.getInstructor() != null ? course.getInstructor().getFullName() : "Not Assigned"));
-        
-        logger.log("Lecturer assignment attempted for course: " + courseId);
-    }
-    
-    public void manageSubjects() {
-        System.out.println("\n=== SUBJECT MANAGEMENT ===");
-        System.out.println("1. Create Subject");
-        System.out.println("2. View All Subjects");
-        System.out.println("3. Assign Subject to Course");
-        System.out.println("4. Remove Subject from Course");
+
+    private void courseEnrollmentMenu() {
+        System.out.println("\n=== COURSE ENROLLMENT ===");
+        System.out.println("1. Enroll Student");
+        System.out.println("2. Unenroll Student");
+        System.out.println("3. View Course Enrollment");
+        System.out.println("4. View Student Courses");
         System.out.print("Enter choice: ");
-        
+
         int choice = getChoice();
-        
+
         switch (choice) {
-            case 1: createSubjectInteractive(); break;
-            case 2: viewAllSubjects(); break;
-            case 3: assignSubjectToCourse(); break;
-            case 4: removeSubjectFromCourse(); break;
+            case 1: enrollStudentInteractive(); break;
+            case 2: unenrollStudentInteractive(); break;
+            case 3: viewCourseEnrollmentInteractive(); break;
+            case 4: viewStudentCoursesInteractive(); break;
             default: System.out.println("Invalid choice.");
         }
     }
-    
-    private void createSubjectInteractive() {
-        System.out.println("\n=== CREATE NEW SUBJECT ===");
-        
-        System.out.print("Enter Subject ID: ");
-        String subjectId = scanner.nextLine();
-        
-        System.out.print("Enter Subject Name: ");
-        String subjectName = scanner.nextLine();
-        
-        System.out.print("Enter Subject Code: ");
-        String subjectCode = scanner.nextLine();
-        
-        System.out.print("Enter Credits: ");
-        int credits = Integer.parseInt(scanner.nextLine());
-        
-        Subject newSubject = new Subject(subjectId, subjectName, subjectCode, credits);
-        subjects.put(subjectId, newSubject);
-        
-        System.out.println("Subject created successfully!");
-        newSubject.displaySubjectInfo();
-        
-        logger.log("Subject created: " + subjectId);
-    }
-    
-    private void viewAllSubjects() {
-        System.out.println("\n=== ALL SUBJECTS ===");
-        if (subjects.isEmpty()) {
-            System.out.println("No subjects found.");
-            return;
-        }
-        
-        System.out.printf("%-10s %-30s %-15s %-8s %-20s%n", 
-                         "Subject ID", "Subject Name", "Subject Code", "Credits", "Course");
-        System.out.println("-".repeat(85));
-        
-        for (Subject subject : subjects.values()) {
-            System.out.printf("%-10s %-30s %-15s %-8d %-20s%n",
-                             subject.getSubjectId(),
-                             subject.getSubjectName(),
-                             subject.getSubjectCode(),
-                             subject.getCredits(),
-                             subject.getCourse() != null ? subject.getCourse().getCourseName() : "Not Assigned");
-        }
-    }
-    
-    private void assignSubjectToCourse() {
-        System.out.println("\n=== ASSIGN SUBJECT TO COURSE ===");
-        System.out.print("Enter Subject ID: ");
-        String subjectId = scanner.nextLine();
-        
+
+    private void enrollStudentInteractive() {
         System.out.print("Enter Course ID: ");
         String courseId = scanner.nextLine();
-        
-        Subject subject = subjects.get(subjectId);
-        Course course = courses.get(courseId);
-        
-        if (subject == null) {
-            System.out.println("Subject not found.");
-            return;
-        }
-        
+
+        Course course = read(courseId);
         if (course == null) {
             System.out.println("Course not found.");
             return;
         }
-        
-        course.addSubject(subject);
-        System.out.println("Subject assigned to course successfully!");
-        
-        logger.log("Subject " + subjectId + " assigned to course " + courseId);
+
+        System.out.print("Enter Student ID: ");
+        String studentId = scanner.nextLine();
+
+        if (course.enrollStudent(studentId)) {
+            update(course);
+            System.out.println("Student enrolled successfully!");
+        } else {
+            System.out.println("Enrollment failed. Course may be full or student already enrolled.");
+        }
     }
-    
-    private void removeSubjectFromCourse() {
-        System.out.println("\n=== REMOVE SUBJECT FROM COURSE ===");
-        System.out.print("Enter Subject ID: ");
-        String subjectId = scanner.nextLine();
-        
-        Subject subject = subjects.get(subjectId);
-        if (subject == null) {
-            System.out.println("Subject not found.");
+
+    private void unenrollStudentInteractive() {
+        System.out.print("Enter Course ID: ");
+        String courseId = scanner.nextLine();
+
+        Course course = read(courseId);
+        if (course == null) {
+            System.out.println("Course not found.");
             return;
         }
-        
-        if (subject.getCourse() == null) {
-            System.out.println("Subject is not assigned to any course.");
+
+        System.out.print("Enter Student ID: ");
+        String studentId = scanner.nextLine();
+
+        if (course.unenrollStudent(studentId)) {
+            update(course);
+            System.out.println("Student unenrolled successfully!");
+        } else {
+            System.out.println("Unenrollment failed. Student may not be enrolled in this course.");
+        }
+    }
+
+    private void viewCourseEnrollmentInteractive() {
+        System.out.print("Enter Course ID: ");
+        String courseId = scanner.nextLine();
+
+        Course course = read(courseId);
+        if (course == null) {
+            System.out.println("Course not found.");
             return;
         }
-        
-        Course course = subject.getCourse();
-        course.removeSubject(subject);
-        System.out.println("Subject removed from course successfully!");
-        
-        logger.log("Subject " + subjectId + " removed from course " + course.getCourseId());
+
+        System.out.println("\n=== COURSE ENROLLMENT ===");
+        System.out.println("Course: " + course.getCourseName() + " (" + courseId + ")");
+        System.out.println("Enrolled Students: " + course.getEnrolledStudents().size() + "/" + course.getMaxStudents());
+
+        if (!course.getEnrolledStudents().isEmpty()) {
+            System.out.println("\nEnrolled Students:");
+            course.getEnrolledStudents().forEach(studentId ->
+                    System.out.println("- " + studentId));
+        }
     }
-    
-    public void generateTimetableInteractive() {
-        System.out.println("\n=== GENERATE TIMETABLE ===");
-        System.out.print("Enter Department (or 'ALL' for all departments): ");
-        String department = scanner.nextLine();
-        
-        System.out.print("Enter Semester: ");
-        String semester = scanner.nextLine();
-        
-        timetableGenerator.generateTimetable(courses.values(), department, semester);
-        
-        logger.log("Timetable generated for department: " + department + ", semester: " + semester);
+
+    private void viewStudentCoursesInteractive() {
+        System.out.print("Enter Student ID: ");
+        String studentId = scanner.nextLine();
+
+        List<Course> studentCourses = courses.values().stream()
+                .filter(course -> course.isStudentEnrolled(studentId))
+                .collect(Collectors.toList());
+
+        System.out.println("\n=== STUDENT COURSES ===");
+        System.out.println("Student ID: " + studentId);
+        System.out.println("Enrolled Courses: " + studentCourses.size());
+
+        if (!studentCourses.isEmpty()) {
+            System.out.printf("%-8s %-25s %-8s %-15s%n", "ID", "Course Name", "Credits", "Instructor");
+            System.out.println("-".repeat(60));
+
+            studentCourses.forEach(course -> {
+                System.out.printf("%-8s %-25s %-8d %-15s%n",
+                        course.getCourseId(),
+                        course.getCourseName().length() > 23 ? course.getCourseName().substring(0, 23) + ".." : course.getCourseName(),
+                        course.getCredits(),
+                        course.getInstructor() != null ?
+                                (course.getInstructor().length() > 13 ? course.getInstructor().substring(0, 13) + ".." : course.getInstructor()) : "N/A");
+            });
+
+            int totalCredits = studentCourses.stream().mapToInt(Course::getCredits).sum();
+            System.out.println("-".repeat(60));
+            System.out.println("Total Credits: " + totalCredits);
+        }
     }
-    
-    public void generateCourseReports() {
+
+    private void courseReportsMenu() {
         System.out.println("\n=== COURSE REPORTS ===");
-        
-        Map<String, Long> departmentCount = courses.values().stream()
-                .collect(Collectors.groupingBy(Course::getDepartment, Collectors.counting()));
-        
-        Map<CourseType, Long> typeCount = courses.values().stream()
-                .collect(Collectors.groupingBy(Course::getCourseType, Collectors.counting()));
-        
-        long totalEnrollments = courses.values().stream()
-                .mapToLong(course -> course.getEnrolledStudents().size())
+        System.out.println("1. Department-wise Report");
+        System.out.println("2. Instructor-wise Report");
+        System.out.println("3. Enrollment Report");
+        System.out.println("4. Credits Distribution Report");
+        System.out.print("Enter choice: ");
+
+        int choice = getChoice();
+
+        switch (choice) {
+            case 1: generateDepartmentWiseReport(); break;
+            case 2: generateInstructorWiseReport(); break;
+            case 3: generateEnrollmentReport(); break;
+            case 4: generateCreditsDistributionReport(); break;
+            default: System.out.println("Invalid choice.");
+        }
+    }
+
+    private void generateDepartmentWiseReport() {
+        System.out.println("\n=== DEPARTMENT-WISE REPORT ===");
+
+        Map<String, List<Course>> coursesByDept = courses.values().stream()
+                .filter(course -> course.getDepartment() != null)
+                .collect(Collectors.groupingBy(Course::getDepartment));
+
+        System.out.printf("%-20s %-10s %-15s%n", "Department", "Courses", "Total Credits");
+        System.out.println("-".repeat(50));
+
+        coursesByDept.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> {
+                    String dept = entry.getKey();
+                    List<Course> deptCourses = entry.getValue();
+                    int totalCredits = deptCourses.stream().mapToInt(Course::getCredits).sum();
+
+                    System.out.printf("%-20s %-10d %-15d%n",
+                            dept.length() > 18 ? dept.substring(0, 18) + ".." : dept,
+                            deptCourses.size(),
+                            totalCredits);
+                });
+    }
+
+    private void generateInstructorWiseReport() {
+        System.out.println("\n=== INSTRUCTOR-WISE REPORT ===");
+
+        Map<String, List<Course>> coursesByInstructor = courses.values().stream()
+                .filter(course -> course.getInstructor() != null)
+                .collect(Collectors.groupingBy(Course::getInstructor));
+
+        System.out.printf("%-20s %-10s %-15s%n", "Instructor", "Courses", "Total Students");
+        System.out.println("-".repeat(50));
+
+        coursesByInstructor.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> {
+                    String instructor = entry.getKey();
+                    List<Course> instructorCourses = entry.getValue();
+                    int totalStudents = instructorCourses.stream()
+                            .mapToInt(course -> course.getEnrolledStudents().size())
+                            .sum();
+
+                    System.out.printf("%-20s %-10d %-15d%n",
+                            instructor.length() > 18 ? instructor.substring(0, 18) + ".." : instructor,
+                            instructorCourses.size(),
+                            totalStudents);
+                });
+    }
+
+    private void generateEnrollmentReport() {
+        System.out.println("\n=== ENROLLMENT REPORT ===");
+
+        System.out.printf("%-8s %-25s %-10s %-10s %-12s%n",
+                "ID", "Course Name", "Enrolled", "Capacity", "Fill Rate");
+        System.out.println("-".repeat(70));
+
+        courses.values().stream()
+                .sorted((c1, c2) -> c1.getCourseId().compareTo(c2.getCourseId()))
+                .forEach(course -> {
+                    int enrolled = course.getEnrolledStudents().size();
+                    int capacity = course.getMaxStudents();
+                    double fillRate = capacity > 0 ? (double) enrolled / capacity * 100 : 0;
+
+                    System.out.printf("%-8s %-25s %-10d %-10d %-12.1f%%n",
+                            course.getCourseId(),
+                            course.getCourseName().length() > 23 ? course.getCourseName().substring(0, 23) + ".." : course.getCourseName(),
+                            enrolled,
+                            capacity,
+                            fillRate);
+                });
+
+        // Summary
+        int totalEnrolled = courses.values().stream()
+                .mapToInt(course -> course.getEnrolledStudents().size())
                 .sum();
-        
-        System.out.println("Total Courses: " + courses.size());
-        System.out.println("Total Subjects: " + subjects.size());
-        System.out.println("Total Enrollments: " + totalEnrollments);
-        
-        System.out.println("\nCourses by Department:");
-        for (Map.Entry<String, Long> entry : departmentCount.entrySet()) {
-            System.out.println("- " + entry.getKey() + ": " + entry.getValue());
+        int totalCapacity = courses.values().stream()
+                .mapToInt(Course::getMaxStudents)
+                .sum();
+        double overallFillRate = totalCapacity > 0 ? (double) totalEnrolled / totalCapacity * 100 : 0;
+
+        System.out.println("-".repeat(70));
+        System.out.println("Total Enrolled: " + totalEnrolled);
+        System.out.println("Total Capacity: " + totalCapacity);
+        System.out.println("Overall Fill Rate: " + String.format("%.1f", overallFillRate) + "%");
+    }
+
+    private void generateCreditsDistributionReport() {
+        System.out.println("\n=== CREDITS DISTRIBUTION REPORT ===");
+
+        Map<Integer, Long> creditsDistribution = courses.values().stream()
+                .collect(Collectors.groupingBy(Course::getCredits, Collectors.counting()));
+
+        System.out.printf("%-10s %-10s%n", "Credits", "Courses");
+        System.out.println("-".repeat(25));
+
+        creditsDistribution.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> {
+                    System.out.printf("%-10d %-10d%n", entry.getKey(), entry.getValue());
+                });
+
+        double avgCredits = courses.values().stream()
+                .mapToInt(Course::getCredits)
+                .average()
+                .orElse(0.0);
+
+        System.out.println("-".repeat(25));
+        System.out.println("Average Credits per Course: " + String.format("%.1f", avgCredits));
+    }
+
+    private void displayCourseStatistics() {
+        System.out.println("\n=== COURSE STATISTICS ===");
+
+        int totalCourses = courses.size();
+        if (totalCourses == 0) {
+            System.out.println("No courses in the system.");
+            return;
         }
-        
-        System.out.println("\nCourses by Type:");
-        for (Map.Entry<CourseType, Long> entry : typeCount.entrySet()) {
-            System.out.println("- " + entry.getKey() + ": " + entry.getValue());
-        }
-        
-        logger.log("Course reports generated");
-    }
-    
-    // Utility methods
-    public List<Course> getCoursesByDepartment(String department) {
-        return courses.values().stream()
-                .filter(course -> course.getDepartment().equalsIgnoreCase(department))
-                .collect(Collectors.toList());
-    }
-    
-    public List<Course> getCoursesByType(CourseType courseType) {
-        return courses.values().stream()
-                .filter(course -> course.getCourseType() == courseType)
-                .collect(Collectors.toList());
-    }
-    
-    public List<Course> getActiveCourses() {
-        return courses.values().stream()
-                .filter(course -> course.getStatus() == CourseStatus.ACTIVE)
-                .collect(Collectors.toList());
-    }
-    
-    public boolean courseExists(String courseId) {
-        return courses.containsKey(courseId);
-    }
-    
-    public int getTotalCourseCount() {
-        return courses.size();
-    }
-    
-    public Map<String, Course> getAllCoursesMap() {
-        return new HashMap<>(courses);
-    }
-    
-    public Map<String, Subject> getAllSubjectsMap() {
-        return new HashMap<>(subjects);
+
+        System.out.println("OVERVIEW:");
+        System.out.println("- Total Courses: " + totalCourses);
+        System.out.println("- Active Courses: " + getActiveCourses());
+        System.out.println("- Inactive Courses: " + getInactiveCourses());
+
+        // Department distribution
+        Map<String, Long> deptDistribution = courses.values().stream()
+                .filter(course -> course.getDepartment() != null)
+                .collect(Collectors.groupingBy(Course::getDepartment, Collectors.counting()));
+
+        System.out.println("\nDEPARTMENT DISTRIBUTION:");
+        deptDistribution.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .forEach(entry -> System.out.println("- " + entry.getKey() + ": " + entry.getValue()));
+
+        // Credits statistics
+        double avgCredits = courses.values().stream().mapToInt(Course::getCredits).average().orElse(0.0);
+        int totalCredits = courses.values().stream().mapToInt(Course::getCredits).sum();
+
+        System.out.println("\nCREDITS STATISTICS:");
+        System.out.println("- Average Credits per Course: " + String.format("%.1f", avgCredits));
+        System.out.println("- Total Credits Available: " + totalCredits);
+
+        // Enrollment statistics
+        int totalEnrolled = courses.values().stream()
+                .mapToInt(course -> course.getEnrolledStudents().size())
+                .sum();
+        int totalCapacity = courses.values().stream()
+                .mapToInt(Course::getMaxStudents)
+                .sum();
+
+        System.out.println("\nENROLLMENT STATISTICS:");
+        System.out.println("- Total Students Enrolled: " + totalEnrolled);
+        System.out.println("- Total Capacity: " + totalCapacity);
+        System.out.println("- Overall Fill Rate: " +
+                String.format("%.1f", totalCapacity > 0 ? (double) totalEnrolled / totalCapacity * 100 : 0) + "%");
+
+        logger.log("Course statistics displayed");
     }
 }
